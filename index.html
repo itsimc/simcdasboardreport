@@ -119,7 +119,7 @@ const go=i=>{cur=Math.max(0,Math.min(D.n-1,i));render()};
 $('#pv').onclick=()=>go(cur-1);$('#nx').onclick=()=>go(cur+1);$('#lt').onclick=()=>go(D.n-1);
 $('#di').min=dt[0];$('#di').max=dt[D.n-1];$('#di').onchange=e=>{const i=dt.indexOf(e.target.value);if(i>=0)go(i)};
 $('#nav').onclick=e=>{const a=e.target.closest('a');if(a){e.preventDefault();pg=a.dataset.p;render()}};matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);render();window.render=render;window.setSm=k=>{sm=k;render()}}
-const CLIENT_ID='1086701683902-6jtutqo7vqentncd4sfpbs1s83accp16.apps.googleusercontent.com',API='https://script.google.com/a/macros/swiss-belhotel.com/s/AKfycby6rzclTYJgISZWCIUJX2X3NGGhD0HOnMgIMVPi-URNbwPu-fMtjiw4Q-pi8HVQkgaJvg/exec';
+const CLIENT_ID='1086701683902-6jtutqo7vqentncd4sfpbs1s83accp16.apps.googleusercontent.com',API='https://script.google.com/macros/s/AKfycby6rzclTYJgISZWCIUJX2X3NGGhD0HOnMgIMVPi-URNbwPu-fMtjiw4Q-pi8HVQkgaJvg/exec';
 const V=document.getElementById('view');
 function gate(t){V.innerHTML='<div class="card" style="max-width:440px;margin:40px auto;text-align:center"><p>'+t+'</p><div id="gb" style="display:flex;justify-content:center"></div></div>';
 google.accounts.id.renderButton(document.getElementById('gb'),{theme:'outline',size:'large'})}
