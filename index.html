@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard SIMC – Swiss-Belinn Modern Cikande</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--hd:#fff;--tx:#17202e;--mut:#667085;--line:#e3e7ee;--acc:#2563eb;--up:#0f9d58;--dn:#d93025;--on:#eaf1ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141c;--card:#18202b;--hd:#18202b;--tx:#e8edf5;--mut:#9aa7b8;--line:#2a3544;--acc:#6ea0ff;--up:#4cc38a;--dn:#ff7b72;--on:#22324d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141c;--card:#18202b;--hd:#18202b;--tx:#e8edf5;--mut:#9aa7b8;--line:#2a3544;--acc:#6ea0ff;--up:#4cc38a;--dn:#ff7b72;--on:#22324d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--hd);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--hd);border-bottom:1px solid var(--line);padding:10px 16px 0}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:17px;margin:0}h1 small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.dp{display:flex;gap:6px;align-items:center}
+.dp button,.dp input,.seg button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.dp input{cursor:text}#dl{color:var(--mut);font-size:12px;margin:4px 0 0;width:100%}
+.warn{color:var(--dn)}
+nav{display:flex;gap:4px;overflow-x:auto;margin-top:6px}
+nav a{padding:8px 12px;color:var(--mut);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;font-weight:500}
+nav a.on{color:var(--acc);border-color:var(--acc)}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.l{color:var(--mut);font-size:12px}.v{font-size:22px;font-weight:650;margin:2px 0}.d{font-size:12px}.up{color:var(--up)}.dn{color:var(--dn)}
+.card h3{margin:0 0 8px;font-size:14px}.ch{position:relative;height:260px}.tall{height:340px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:500}
+.seg{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.seg button.on{background:var(--on);border-color:var(--acc);color:var(--acc)}
+.note{color:var(--mut);font-size:12px;margin:6px 0 12px}footer{text-align:center;color:var(--mut);font-size:12px;padding:16px}
+</style></head><body>
+<header><div class="top"><h1 id="hn"></h1>
+<div class="dp"><button id="pv" aria-label="Hari sebelumnya">‹</button><input type="date" id="di"><button id="nx" aria-label="Hari berikutnya">›</button><button id="lt">Terbaru</button></div>
+<div id="dl"></div></div>
+<nav id="nav"></nav></header>
+<main id="view"><div class="card">Memuat…</div></main>
+<footer>Data hanya-baca · terhubung langsung ke Google Sheet · Pembanding LY = tahun 2025 pada tanggal yang sama</footer>
+<script>
+function boot(D){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const T=D.ty,L=D.ly,dt=D.dates,PAL=['#2563eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#64748b','#14b8a6','#a855f7'];
+const MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],DAY=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const PG=[['ringkasan','Ringkasan'],['kamar','Kamar &amp; Okupansi'],['segmen','Segmen Pasar'],['fnb','F&amp;B &amp; Lainnya'],['budget','Budget vs Aktual']];
+let cur=D.n-1,sm='day',CH=[],pg='ringkasan';
+const mo=i=>+dt[i].slice(5,7)-1;
+const MR=MON.map((_,m)=>{let a=-1,b=-1;dt.forEach((d,i)=>{if(mo(i)===m){if(a<0)a=i;b=i}});return[a,b]});
+const ms=i=>MR[mo(i)][0];
+const lg=(v,x=0)=>v.toLocaleString('id-ID',{maximumFractionDigits:x});
+const sh=v=>{const a=Math.abs(v);return a>=1e9?lg(v/1e9,2)+' M':a>=1e6?lg(v/1e6,1)+' jt':a>=1e3?lg(v/1e3,0)+' rb':lg(v)};
+const rp=v=>'Rp '+sh(v),pc=v=>lg(v*100,1)+'%';
+const lb=i=>dt[i].slice(8)+'/'+dt[i].slice(5,7);
+function agg(S,a,b){b=Math.min(b,D.n-1);const o={sold:0,rev:0,av:0,fbc:0,fbr:0,oth:0};
+for(let i=a;i<=b;i++){o.sold+=S.sold[i];o.rev+=S.rev[i];o.av+=S.avail[i]||D.rooms;o.fbc+=S.fbc[i];o.fbr+=S.fbr[i];o.oth+=S.oth[i]}
+o.tot=o.rev+o.fbr+o.oth;o.occ=o.av?o.sold/o.av:0;o.adr=o.sold?o.rev/o.sold:0;o.rp=o.av?o.rev/o.av:0;o.chk=o.fbc?o.fbr/o.fbc:0;return o}
+const rng=m=>m==='day'?[cur,cur]:m==='mtd'?[ms(cur),cur]:[0,cur];
+const W=()=>[Math.max(0,cur-29),cur];
+const ser=(S,f,a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(f(S,i));return r};
+const occ=(S,i)=>S.sold[i]/(S.avail[i]||D.rooms),adr=(S,i)=>S.sold[i]?S.rev[i]/S.sold[i]:null;
+function kpi(l,v,a,b,t){let d='';if(b){const x=t==='pp'?(a-b)*100:(a/b-1)*100,u=x>=0;d=`<div class="d ${u?'up':'dn'}">${u?'▲':'▼'} ${lg(Math.abs(x),1)}${t==='pp'?' pt':'%'} vs LY</div>`}
+return `<div class="card"><div class="l">${l}</div><div class="v">${v}</div>${d}</div>`}
+const card=(t,id,c='')=>`<div class="card"><h3>${t}</h3><div class="ch ${c}"><canvas id="${id}"></canvas></div></div>`;
+const tbl=(h,r)=>`<div class="tw"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
+function chart(id,type,labels,sets,o={}){const el=document.getElementById(id);if(!el)return;const f=o.f||sh,dn=type==='doughnut';
+CH.push(new Chart(el,{type,data:{labels,datasets:sets.map((s,i)=>({borderWidth:2,pointRadius:0,tension:.25,backgroundColor:PAL[i%12],borderColor:PAL[i%12],...s}))},
+options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+plugins:{legend:{display:sets.length>1||dn,position:'bottom',labels:{boxWidth:10}},tooltip:{callbacks:{label:x=>(dn?x.label:x.dataset.label||'')+': '+(x.dataset.f||f)(dn?x.parsed:o.h?x.parsed.x:x.parsed.y)}}},
+scales:dn?{}:{x:{stacked:!!o.stack,grid:{display:false},ticks:{maxTicksLimit:12,callback:o.h?v=>f(v):undefined}},y:{stacked:!!o.stack,ticks:{callback:o.h?undefined:v=>f(v)}},...(o.y2?{y2:{position:'right',grid:{display:false},ticks:{callback:v=>sh(v)}}}:{})},
+...(o.h?{indexAxis:'y'}:{})}}))}
+const P={};
+P.ringkasan=()=>{const a=agg(T,cur,cur),b=agg(L,cur,cur),[x,y]=W();
+const per=[['Tanggal terpilih',cur,cur],['Bulan s.d. tanggal (MTD)',ms(cur),cur],['Tahun s.d. tanggal (YTD)',0,cur]].map(([n,s,e])=>{const A=agg(T,s,e),B=agg(L,s,e),g=A.tot/B.tot-1;return[n,lg(A.sold),pc(A.occ),rp(A.adr),rp(A.rp),rp(A.tot),`<span class="${g>=0?'up':'dn'}">${g>=0?'▲':'▼'} ${lg(Math.abs(g)*100,1)}%</span>`]});
+$('#view').innerHTML=`<div class="grid">${kpi('Total Revenue (incl. SC)',rp(a.tot),a.tot,b.tot)}${kpi('Okupansi',pc(a.occ),a.occ,b.occ,'pp')}${kpi('ADR',rp(a.adr),a.adr,b.adr)}${kpi('RevPAR',rp(a.rp),a.rp,b.rp)}${kpi('Kamar Terjual',lg(a.sold),a.sold,b.sold)}${kpi('Room Revenue',rp(a.rev),a.rev,b.rev)}${kpi('F&amp;B Revenue',rp(a.fbr),a.fbr,b.fbr)}${kpi('Others Revenue',rp(a.oth),a.oth,b.oth)}</div>
+<div class="card" style="margin-bottom:12px"><h3>Ringkasan periode</h3>${tbl(['Periode','Room Sold','Okupansi','ADR','RevPAR','Total Revenue','vs LY'],per)}</div>
+<div class="grid g2">${card('Komposisi pendapatan 30 hari terakhir','c1')}${card('Okupansi 30 hari terakhir vs LY','c2')}</div>`;
+const lab=ser(T,(s,i)=>lb(i),x,y);
+chart('c1','bar',lab,[{label:'Room',data:ser(T,(s,i)=>s.rev[i],x,y)},{label:'F&B',data:ser(T,(s,i)=>s.fbr[i],x,y)},{label:'Others',data:ser(T,(s,i)=>s.oth[i],x,y)}],{stack:1});
+chart('c2','line',lab,[{label:'2026',data:ser(T,occ,x,y)},{label:'2025 (LY)',data:ser(L,occ,x,y),borderDash:[5,4]}],{f:pc})};
+P.kamar=()=>{const a=agg(T,cur,cur),b=agg(L,cur,cur),[x,y]=W(),m=mo(cur),[ma,mb]=MR[m];
+$('#view').innerHTML=`<div class="grid">${kpi('Kamar Terjual',lg(a.sold),a.sold,b.sold)}${kpi('Okupansi',pc(a.occ),a.occ,b.occ,'pp')}${kpi('ADR',rp(a.adr),a.adr,b.adr)}${kpi('RevPAR',rp(a.rp),a.rp,b.rp)}${kpi('No-show (kamar)',lg(T.ns[cur]))}${kpi('Batal hari-H (kamar)',lg(T.sdc[cur]))}${kpi('Complimentary',lg(T.comp[cur]))}</div>
+<div class="grid g2">${card('Okupansi 30 hari terakhir','c1')}${card('ADR 30 hari terakhir','c2')}${card('Okupansi per bulan','c3')}${card('ADR per bulan','c4')}${card('Rata-rata okupansi per hari – '+MON[m]+' 2026','c5')}${card('RevPAR 30 hari terakhir','c6')}</div>`;
+const lab=ser(T,(s,i)=>lb(i),x,y),A=MR.map(([s,e])=>s<D.n?agg(T,s,e):null),B=MR.map(([s,e])=>agg(L,s,e));
+const two=(id,t,f)=>chart(id,t,lab,[{label:'2026',data:ser(T,f,x,y)},{label:'2025 (LY)',data:ser(L,f,x,y),borderDash:[5,4]}],{f:id==='c1'?pc:sh});
+two('c1','line',occ);two('c2','line',adr);two('c6','line',(s,i)=>s.rev[i]/(s.avail[i]||D.rooms));
+const mm=(id,k,f)=>chart(id,'bar',MON,[{label:'2026',data:A.map(o=>o&&o[k])},{label:'2025 (LY)',data:B.map(o=>o[k])}],{f});
+mm('c3','occ',pc);mm('c4','adr',sh);
+const w=[0,1,2,3,4,5,6].map(()=>[0,0]);for(let i=ma;i<=Math.min(mb,D.n-1);i++){const k=new Date(dt[i]+'T00:00').getDay();w[k][0]+=T.sold[i];w[k][1]+=T.avail[i]||D.rooms}
+chart('c5','bar',DAY,[{label:'Okupansi',data:w.map(q=>q[1]?q[0]/q[1]:null)}],{f:pc})};
+P.segmen=()=>{const[a,b]=rng(sm),r=D.segs.map((n,k)=>{let u=0,v=0;for(let i=a;i<=b;i++){u+=T.seg[n][0][i];v+=T.seg[n][1][i]}return{n,k,u,v,adr:u?v/u:0}}).filter(q=>q.u>0).sort((p,q)=>q.v-p.v);
+const tu=r.reduce((s,q)=>s+q.u,0),tv=r.reduce((s,q)=>s+q.v,0),bt=(k,t)=>`<button class="${sm===k?'on':''}" onclick="setSm('${k}')">${t}</button>`;
+$('#view').innerHTML=`<div class="seg">${bt('day','Tanggal terpilih')}${bt('mtd','Bulan s.d. tanggal')}${bt('ytd','Tahun s.d. tanggal')}</div>
+${r.length?`<div class="grid g2">${card('Porsi kamar terjual per segmen','c1')}${card('Revenue per segmen','c2')}${card('ADR per segmen','c3')}<div class="card"><h3>Detail segmen</h3>${tbl(['Segmen','Room Nights','Porsi','Revenue','ADR'],r.map(q=>[q.n,lg(q.u),pc(q.u/tu),rp(q.v),rp(q.adr)]).concat([['<b>Total</b>','<b>'+lg(tu)+'</b>','100%','<b>'+rp(tv)+'</b>','<b>'+rp(tv/tu)+'</b>']]))}</div></div>`:'<div class="card">Tidak ada data segmen pada periode ini.</div>'}`;
+if(!r.length)return;const lab=r.map(q=>q.n),col=r.map(q=>PAL[q.k%12]);
+chart('c1','doughnut',lab,[{data:r.map(q=>q.u),backgroundColor:col,borderWidth:0}],{f:lg});
+chart('c2','bar',lab,[{data:r.map(q=>q.v),backgroundColor:col}],{h:1});chart('c3','bar',lab,[{data:r.map(q=>q.adr),backgroundColor:col}],{h:1})};
+P.fnb=()=>{const a=agg(T,cur,cur),b=agg(L,cur,cur),[x,y]=W(),s=ms(cur),sum=(k,p,q)=>{let t=0;for(let i=p;i<=q;i++)t+=T[k][i];return t},pr=[0,1,2,3,4].map(k=>{let t=0;for(let i=s;i<=cur;i++)t+=T.p[k][i];return t});
+$('#view').innerHTML=`<div class="grid">${kpi('F&amp;B Covers',lg(a.fbc),a.fbc,b.fbc)}${kpi('F&amp;B Revenue',rp(a.fbr),a.fbr,b.fbr)}${kpi('F&amp;B Average Check',rp(a.chk),a.chk,b.chk)}${kpi('Others Revenue',rp(a.oth),a.oth,b.oth)}${kpi('SBEC Benefit – baru (MTD)',lg(sum('sbb',s,cur)))}${kpi('SBEC Benefit – baru (YTD)',lg(sum('sbb',0,cur)))}${kpi('SBEC Plus – baru (YTD)',lg(sum('sbp',0,cur)))}</div>
+<div class="grid g2">${card('F&amp;B Revenue &amp; Average Check – 30 hari','c1')}${card('Promo F&amp;B – jumlah cover (MTD)','c2')}${card('F&amp;B Revenue per bulan','c3')}${card('Others Revenue per bulan','c4')}</div>
+<p class="note">Nama promo mengikuti kolom Promo 1–5 pada Excel.</p>`;
+chart('c1','bar',ser(T,(q,i)=>lb(i),x,y),[{label:'F&B Revenue',data:ser(T,(q,i)=>q.fbr[i],x,y)},{type:'line',label:'Avg Check',data:ser(T,(q,i)=>q.fbc[i]?q.fbr[i]/q.fbc[i]:null,x,y),yAxisID:'y2',borderColor:PAL[1],backgroundColor:PAL[1]}],{y2:1});
+chart('c2','bar',['Promo 1','Promo 2','Promo 3','Promo 4','Promo 5'],[{label:'Cover',data:pr}],{f:lg});
+const A=MR.map(([p,q])=>p<D.n?agg(T,p,q):null),B=MR.map(([p,q])=>agg(L,p,q)),mm=(id,k)=>chart(id,'bar',MON,[{label:'2026',data:A.map(o=>o&&o[k])},{label:'2025 (LY)',data:B.map(o=>o[k])}]);mm('c3','fbr');mm('c4','oth')};
+P.budget=()=>{const m=mo(cur),[s,e]=MR[m],e2=Math.min(e,D.n-1),A=agg(T,s,e2),Y=agg(L,s,e2),B=D.bf.b,F=D.bf.f,part=e2<e;
+const row=(n,k,v,f,ly)=>[n,f(B[k][m]),f(F[k][m]),f(v),B[k][m]?(k==='occ'?lg((v-B[k][m])*100,1)+' pt':lg(v/B[k][m]*100,1)+'%'):'–',f(ly)];
+const rows=[row('Room Sold','sold',A.sold,lg,Y.sold),row('Okupansi','occ',A.occ,pc,Y.occ),row('ADR','adr',A.adr,rp,Y.adr),row('Room Revenue','rev',A.rev,rp,Y.rev),row('F&amp;B Revenue','fbr',A.fbr,rp,Y.fbr),row('Other Revenue','oth',A.oth,rp,Y.oth)];
+$('#view').innerHTML=`<div class="card" style="margin-bottom:12px"><h3>${MON[m]} 2026 – Budget vs Forecast vs Aktual</h3>${tbl(['Metrik','Budget','Forecast','Aktual','Aktual vs Budget','LY (2025)'],rows)}${part?`<p class="note">Bulan berjalan: aktual dan LY dihitung s.d. ${dt[e2].slice(8)} ${MON[m]} (data terakhir), sedangkan Budget dan Forecast adalah angka sebulan penuh.</p>`:''}</div>
+<div class="grid g2">${card('Room Revenue per bulan','c1','tall')}${card('Okupansi per bulan','c2','tall')}${card('Rooms Sold per bulan','c3')}${card('ADR per bulan','c4')}</div>`;
+const Ab=MR.map(([p,q])=>p<D.n?agg(T,p,q):null),Lb=MR.map(([p,q])=>agg(L,p,q)),g=(id,k,f)=>chart(id,'bar',MON,[{label:'Budget',data:B[k]},{label:'Forecast',data:F[k]},{label:'Aktual 2026',data:Ab.map(o=>o&&o[k==='rev'?'rev':k])},{label:'LY 2025',data:Lb.map(o=>o[k])}],{f});
+g('c1','rev',sh);g('c2','occ',pc);g('c3','sold',lg);g('c4','adr',sh)};
+function render(){CH.forEach(c=>c.destroy());CH=[];const cs=getComputedStyle(document.documentElement);Chart.defaults.color=cs.getPropertyValue('--mut');Chart.defaults.borderColor=cs.getPropertyValue('--line');
+let p=pg;$$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p===p));
+const d=new Date(dt[cur]+'T00:00');$('#di').value=dt[cur];$('#dl').innerHTML=`${DAY[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()} · Data lengkap s.d. ${dt[D.n-1].slice(8)} ${MON[mo(D.n-1)]} 2026`;
+P[p]();scrollTo(0,0)}
+$('#hn').innerHTML=`${D.hotel}<small>${D.code} · ${D.rooms} kamar</small>`;
+$('#nav').innerHTML=PG.map(([k,t])=>`<a href="#${k}" data-p="${k}">${t}</a>`).join('');
+const go=i=>{cur=Math.max(0,Math.min(D.n-1,i));render()};
+$('#pv').onclick=()=>go(cur-1);$('#nx').onclick=()=>go(cur+1);$('#lt').onclick=()=>go(D.n-1);
+$('#di').min=dt[0];$('#di').max=dt[D.n-1];$('#di').onchange=e=>{const i=dt.indexOf(e.target.value);if(i>=0)go(i)};
+$('#nav').onclick=e=>{const a=e.target.closest('a');if(a){e.preventDefault();pg=a.dataset.p;render()}};matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);render();window.render=render;window.setSm=k=>{sm=k;render()}}
+const CLIENT_ID='1086701683902-6jtutqo7vqentncd4sfpbs1s83accp16.apps.googleusercontent.com',API='https://script.google.com/a/macros/swiss-belhotel.com/s/AKfycby6rzclTYJgISZWCIUJX2X3NGGhD0HOnMgIMVPi-URNbwPu-fMtjiw4Q-pi8HVQkgaJvg/exec';
+const V=document.getElementById('view');
+function gate(t){V.innerHTML='<div class="card" style="max-width:440px;margin:40px auto;text-align:center"><p>'+t+'</p><div id="gb" style="display:flex;justify-content:center"></div></div>';
+google.accounts.id.renderButton(document.getElementById('gb'),{theme:'outline',size:'large'})}
+async function load(cred){V.innerHTML='<div class="card">Memuat data…</div>';
+try{const j=await(await fetch(API+'?token='+encodeURIComponent(cred))).json();if(j.error)return gate('Akses ditolak: '+j.error+'.');boot(j)}
+catch(e){gate('Gagal memuat data. Coba masuk kembali.')}}
+function initG(){google.accounts.id.initialize({client_id:CLIENT_ID,callback:r=>load(r.credential)});gate('Dashboard ini bersifat tertutup. Masuk dengan akun Google yang sudah didaftarkan.')}
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="initG()"></script></body></html>
